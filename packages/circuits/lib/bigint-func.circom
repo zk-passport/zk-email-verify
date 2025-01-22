@@ -1,7 +1,7 @@
 pragma circom 2.1.6;
 
 
-function div_ceil(m, n) {
+function div_ceil_zkemail(m, n) {
     var ret = 0;
     if (m % n == 0) {
         ret = m \ n;
@@ -11,7 +11,7 @@ function div_ceil(m, n) {
     return ret;
 }
 
-function log_ceil(n) {
+function log_ceil_zkemail(n) {
    var n_temp = n;
    for (var i = 0; i < 254; i++) {
        if (n_temp == 0) {
@@ -29,8 +29,8 @@ function log_ceil(n) {
 // all others are positive
 // - 1 since the last register is included in the last ceil(m/n) array
 // + 1 since the carries from previous registers could push you over
-function getProperRepresentation(m, n, k, in) {
-    var ceilMN = div_ceil(m, n);
+function getProperRepresentation_zkemail(m, n, k, in) {
+    var ceilMN = div_ceil_zkemail(m, n);
 
     var out[100]; // should be out[k + ceilMN]
     assert(k + ceilMN < 100);
@@ -53,7 +53,7 @@ function getProperRepresentation(m, n, k, in) {
 }
 
 // Evaluate polynomial a at point x
-function poly_eval(len, a, x) {
+function poly_eval_zkemail(len, a, x) {
     var v = 0;
     for (var i = 0; i < len; i++) {
         v += a[i] * (x ** i);
@@ -62,7 +62,7 @@ function poly_eval(len, a, x) {
 }
 
 // Interpolate a degree len-1 polynomial given its evaluations at 0..len-1
-function poly_interp(len, v) {
+function poly_interp_zkemail(len, v) {
     assert(len <= 200);
     var out[200];
     for (var i = 0; i < len; i++) {
@@ -103,7 +103,7 @@ function poly_interp(len, v) {
 }
 
 // 1 if true, 0 if false
-function long_gt(n, k, a, b) {
+function long_gt_zkemail(n, k, a, b) {
     for (var i = k - 1; i >= 0; i--) {
         if (a[i] > b[i]) {
             return 1;
@@ -119,7 +119,7 @@ function long_gt(n, k, a, b) {
 // a has k registers
 // b has k registers
 // a >= b
-function long_sub(n, k, a, b) {
+function long_sub_zkemail(n, k, a, b) {
     var diff[100];
     var borrow[100];
     for (var i = 0; i < k; i++) {
@@ -146,7 +146,7 @@ function long_sub(n, k, a, b) {
 
 // a is a n-bit scalar
 // b has k registers
-function long_scalar_mult(n, k, a, b) {
+function long_scalar_mult_zkemail(n, k, a, b) {
     var out[100];
     for (var i = 0; i < 100; i++) {
         out[i] = 0;
@@ -166,7 +166,7 @@ function long_scalar_mult(n, k, a, b) {
 // out[0] has length m + 1 -- quotient
 // out[1] has length k -- remainder
 // implements algorithm of https://people.eecs.berkeley.edu/~fateman/282/F%20Wright%20notes/week4.pdf
-function long_div(n, k, m, a, b){
+function long_div_zkemail(n, k, m, a, b){
     var out[2][100];
     m += k;
     while (b[k-1] == 0) {
@@ -195,9 +195,9 @@ function long_div(n, k, m, a, b){
             }
         }
 
-        out[0][i] = short_div(n, k, dividend, b);
+        out[0][i] = short_div_zkemail(n, k, dividend, b);
 
-        var mult_shift[100] = long_scalar_mult(n, k, out[0][i], b);
+        var mult_shift[100] = long_scalar_mult_zkemail(n, k, out[0][i], b);
         var subtrahend[200];
         for (var j = 0; j < m + k; j++) {
             subtrahend[j] = 0;
@@ -207,7 +207,7 @@ function long_div(n, k, m, a, b){
                subtrahend[i + j] = mult_shift[j];
             }
         }
-        remainder = long_sub(n, m + k, remainder, subtrahend);
+        remainder = long_sub_zkemail(n, m + k, remainder, subtrahend);
     }
     for (var i = 0; i < k; i++) {
         out[1][i] = remainder[i];
@@ -222,16 +222,16 @@ function long_div(n, k, m, a, b){
 // b has k registers
 // assumes leading digit of b is at least 2 ** (n - 1)
 // 0 <= a < (2**n) * b
-function short_div_norm(n, k, a, b) {
+function short_div_norm_zkemail(n, k, a, b) {
    var qhat = (a[k] * (1 << n) + a[k - 1]) \ b[k - 1];
    if (qhat > (1 << n) - 1) {
       qhat = (1 << n) - 1;
    }
 
-   var mult[100] = long_scalar_mult(n, k, qhat, b);
-   if (long_gt(n, k + 1, mult, a) == 1) {
-      mult = long_sub(n, k + 1, mult, b);
-      if (long_gt(n, k + 1, mult, a) == 1) {
+   var mult[100] = long_scalar_mult_zkemail(n, k, qhat, b);
+   if (long_gt_zkemail(n, k + 1, mult, a) == 1) {
+      mult = long_sub_zkemail(n, k + 1, mult, b);
+      if (long_gt_zkemail(n, k + 1, mult, a) == 1) {
          return qhat - 2;
       } else {
          return qhat - 1;
@@ -246,19 +246,19 @@ function short_div_norm(n, k, a, b) {
 // b has k registers
 // assumes leading digit of b is non-zero
 // 0 <= a < (2**n) * b
-function short_div(n, k, a, b) {
+function short_div_zkemail(n, k, a, b) {
    var scale = (1 << n) \ (1 + b[k - 1]);
 
    // k + 2 registers now
-   var norm_a[100] = long_scalar_mult(n, k + 1, scale, a);
+   var norm_a[100] = long_scalar_mult_zkemail(n, k + 1, scale, a);
    // k + 1 registers now
-   var norm_b[100] = long_scalar_mult(n, k, scale, b);
+   var norm_b[100] = long_scalar_mult_zkemail(n, k, scale, b);
 
    var ret;
    if (norm_b[k] != 0) {
-       ret = short_div_norm(n, k + 1, norm_a, norm_b);
+       ret = short_div_norm_zkemail(n, k + 1, norm_a, norm_b);
    } else {
-       ret = short_div_norm(n, k, norm_a, norm_b);
+       ret = short_div_norm_zkemail(n, k, norm_a, norm_b);
    }
    return ret;
 }
