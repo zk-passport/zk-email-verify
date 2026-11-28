@@ -2829,6 +2829,8 @@ __metadata:
     psl: ^1.9.0
     snarkjs: "https://github.com/sampritipanda/snarkjs.git#fef81fc51d17a734637555c6edbd585ecda02d9e"
     typescript: ^5.2.2
+  peerDependencies:
+    snarkjs: "*"
   languageName: unknown
   linkType: soft
 
